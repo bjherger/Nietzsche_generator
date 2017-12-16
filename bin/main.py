@@ -12,6 +12,7 @@ import io
 import keras
 import numpy
 import pandas
+import sys
 from keras import Input, Model
 from keras.layers import Embedding, Flatten, Dense
 from keras.utils import get_file
@@ -31,9 +32,14 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
 
     chars = extract()
-    chars, encoded_chars, encoder = transform(chars)
+    chars, encoded_chars, encoder, X = transform(chars)
+    chars, encoded_chars, encoder, ohe, char_model = model(chars, encoded_chars, encoder, X)
 
-    model(chars, encoded_chars, encoder)
+    test_snippets = ['the ex', 'helpf', 'eak pl', 'ow: on', 'nvestig']
+
+    for snippet in test_snippets:
+        print "'", snippet, lib.model_predict(encoder, ohe, char_model, snippet), "'"
+
     load()
     pass
 
@@ -57,8 +63,8 @@ def extract():
 
 def transform(chars):
     logging.info('Begin transform')
-
     # Filter characters
+    chars = map(lambda x: x.lower(), chars)
     pre_filter_len = len(chars)
     filter(lambda x: x in lib.legal_characters(), chars)
     post_filter_len = len(chars)
@@ -69,17 +75,20 @@ def transform(chars):
     encoder = LabelEncoder()
     encoded_chars = encoder.fit_transform(chars)
 
-    lib.archive_dataset_schemas('transform', locals(), globals())
-    logging.info('End transform')
-    return chars, encoded_chars, encoder
-
-
-def model(chars, encoded_chars, encoder):
-    logging.info('Begin model')
-
     # Create X, containing character ngrams
     ngrams = lib.find_ngrams(encoded_chars, lib.get_conf('ngram_len'))
     X = numpy.matrix(ngrams)
+
+    lib.archive_dataset_schemas('transform', locals(), globals())
+
+    return chars, encoded_chars, encoder, X
+
+
+
+def model(chars, encoded_chars, encoder, X):
+    logging.info('Begin model')
+
+
 
     # Create y, containing next character after window
     ohe = OneHotEncoder(sparse=False)
@@ -113,15 +122,15 @@ def model(chars, encoded_chars, encoder):
     x = Flatten()(embedded_sequences)
     x = output_layer(x)
 
-    model = Model(sequence_input, x)
-    model.compile(optimizer='Adam', loss='categorical_crossentropy')
+    char_model = Model(sequence_input, x)
+    char_model.compile(optimizer='Adam', loss='categorical_crossentropy')
 
     # Train model
-    model.fit(X, y, batch_size=2048, validation_split=.2)
+    char_model.fit(X, y, batch_size=2048, validation_split=.2, epochs=3)
 
     lib.archive_dataset_schemas('model', locals(), globals())
     logging.info('End model')
-    return chars, encoded_chars, encoder, ohe, model
+    return chars, encoded_chars, encoder, ohe, char_model
 
 
 def load():
