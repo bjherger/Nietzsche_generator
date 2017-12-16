@@ -130,3 +130,9 @@ def archive_dataset_schemas(step_name, local_dict, global_dict):
 
     # Write to file
     agg_schema_df.to_csv(schema_output_path, index_label='variable')
+
+def legal_characters():
+    return list('1234567890,.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ;?!-')
+
+def find_ngrams(input_list, n):
+  return zip(*[input_list[i:] for i in range(n)])
