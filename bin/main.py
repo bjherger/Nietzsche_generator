@@ -21,6 +21,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
 
 import lib
+import models
 
 
 def main():
@@ -29,7 +30,7 @@ def main():
     :return: None
     :rtype: None
     """
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARN)
 
     chars = extract()
     chars, encoded_chars, encoder, X = transform(chars)
@@ -38,7 +39,7 @@ def main():
     test_snippets = ['the ex', 'helpf', 'eak pl', 'ow: on', 'nvestig']
 
     for snippet in test_snippets:
-        print "'", snippet, lib.model_predict(encoder, ohe, char_model, snippet), "'"
+        print "'", snippet, lib.finish_sentence(encoder, ohe, char_model, snippet), "'"
 
     load()
     pass
@@ -100,30 +101,8 @@ def model(chars, encoded_chars, encoder, X):
     # Create embedding
     embedding_input_dim = len(encoder.classes_)
     embedding_output_dim = min((embedding_input_dim +  1)/2, 50)
-    if len(X.shape) >= 2:
-        embedding_input_length = int(X.shape[1])
-    else:
-        embedding_input_length = 1
 
-    sequence_input = keras.Input(shape=(embedding_input_length,), dtype='int32', name='char_input')
-
-    embedding_layer = Embedding(input_dim=embedding_input_dim,
-                                output_dim=embedding_output_dim,
-                                input_length=embedding_input_length,
-                                trainable=True,
-                                name='char_embedding')
-
-    # Create output layer
-    softmax_output_dim = len(y[0])
-    output_layer = Dense(units=softmax_output_dim, activation='softmax')
-
-    # Create model architecture
-    embedded_sequences = embedding_layer(sequence_input)
-    x = Flatten()(embedded_sequences)
-    x = output_layer(x)
-
-    char_model = Model(sequence_input, x)
-    char_model.compile(optimizer='Adam', loss='categorical_crossentropy')
+    char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
 
     # Train model
     char_model.fit(X, y, batch_size=2048, validation_split=.2, epochs=3)
