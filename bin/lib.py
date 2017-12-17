@@ -8,6 +8,10 @@ import pandas
 import yaml
 
 # Global variables
+from sklearn.preprocessing import LabelEncoder
+
+import main
+
 CONFS = None
 BATCH_NAME = None
 TEMP_DIR = None
@@ -130,3 +134,23 @@ def archive_dataset_schemas(step_name, local_dict, global_dict):
 
     # Write to file
     agg_schema_df.to_csv(schema_output_path, index_label='variable')
+
+def legal_characters():
+    return set('1234567890,.abcdefghijklmnopqrstuvwxyz ;?!-')
+
+def find_ngrams(input_list, n):
+  return zip(*[input_list[i:] for i in range(n)])
+
+def model_predict(encoder, ohe, model, text):
+
+    chars = list(text)
+
+    chars, encoded_chars, new_encoder, X = main.transform(chars)
+
+    pred = model.predict(X)
+
+    pred_char_index = numpy.argmax(pred[-1])
+    pred_char = encoder.inverse_transform(pred_char_index)
+
+    return pred_char
+
