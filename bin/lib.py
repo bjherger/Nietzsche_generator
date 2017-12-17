@@ -154,3 +154,14 @@ def model_predict(encoder, ohe, model, text):
 
     return pred_char
 
+def finish_sentence(encoder, ohe, model, text, num_chars=100):
+    result_string = text
+
+    while len(result_string) < len(text) + num_chars:
+        pred_char = model_predict(encoder, ohe, model, text)
+        result_string += pred_char
+
+    result_string=result_string[len(text):]
+    return result_string
+
+
