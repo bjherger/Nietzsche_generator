@@ -30,7 +30,7 @@ def main():
     :return: None
     :rtype: None
     """
-    logging.basicConfig(level=logging.WARN)
+    logging.basicConfig(level=logging.DEBUG)
 
     chars = extract()
     chars, encoded_chars, encoder, X = transform(chars)
@@ -66,10 +66,11 @@ def extract():
 
 def transform(chars):
     logging.info('Begin transform')
+
     # Filter characters
     chars = map(lambda x: x.lower(), chars)
     pre_filter_len = len(chars)
-    filter(lambda x: x in lib.legal_characters(), chars)
+    chars = filter(lambda x: x in lib.legal_characters(), chars)
     post_filter_len = len(chars)
     logging.info('Filtered with legal characters. Length before: {}. Length after: {}'.format(pre_filter_len,
                                                                                               post_filter_len))
@@ -107,7 +108,7 @@ def model(chars, encoded_chars, encoder, X):
     char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
 
     # Train model
-    char_model.fit(X, y, batch_size=2048, validation_split=.5, epochs=1)
+    char_model.fit(X, y, batch_size=2048, validation_split=.2, epochs=30)
 
     lib.archive_dataset_schemas('model', locals(), globals())
     logging.info('End model')

@@ -143,17 +143,31 @@ def find_ngrams(input_list, n):
 
 def model_predict(encoder, ohe, model, text):
 
+    # Transform characters
     chars = list(text)
-
     chars, encoded_chars, new_encoder, X = main.transform(chars)
 
+    # Infer y hat value
     pred = model.predict(X)[-1]
-    scaled_pred = pred / float(sum(pred))
-    pred_char_index = numpy.argmax(numpy.random.multinomial(1, scaled_pred, 1)[0])
-    print(numpy.argmax(pred), pred_char_index, pred[numpy.argmax(pred)], pred[pred_char_index])
-    pred_char = encoder.inverse_transform(pred_char_index)
 
-    return pred_char
+    # Scale y hat so that it is in [0,1)
+    scaled_pred = pred / float(sum(pred))
+    logging.debug('Sum of pred: {}'.format(float(sum(pred))))
+
+    # Pick the most likely character by index
+    most_likely_index = numpy.argmax(scaled_pred)
+
+    # Pick a character from multinomial
+    next_char_index = numpy.argmax(numpy.random.multinomial(1, scaled_pred, 1))
+
+    # Convert both most likely and multinomial random from index to character
+    most_likely_char = encoder.inverse_transform(most_likely_index)
+    next_char = encoder.inverse_transform(next_char_index)
+    logging.info('Most likely char, p: {}, {}. Next char, p: {}, {}'.format(most_likely_char, pred[most_likely_index],
+                                                                            next_char, pred[next_char_index]))
+
+    # Return multinomial random character
+    return next_char
 
 def finish_sentence(encoder, ohe, model, text, num_chars=100):
     result_string = text
