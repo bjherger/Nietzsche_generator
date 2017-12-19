@@ -94,7 +94,8 @@ def model(text, char_indices, indices_char, x, y):
 
     # Train the model, output generated text after each iteration
     for iteration in range(1, 60):
-        logging.info('Interation number: {}'.format(iteration))
+        logging.info('Iteration number: {}'.format(iteration))
+        print 'Iteration number: {}'.format(iteration)
         model.fit(x, y,
                   batch_size=4096,
                   epochs=1)
