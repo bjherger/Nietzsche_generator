@@ -70,19 +70,21 @@ def rnn_embedding_model(embedding_input_dim, embedding_output_dim, X, y):
 
     return char_model
 
-def rnn_model(embedding_input_dim, embedding_output_dim, X, y):
+def rnn_model(X, y):
+    chars = sorted(list(set(lib.legal_characters())))
     if len(X.shape) >= 2:
         input_length = int(X.shape[1])
     else:
         input_length = 1
 
-    nb_classes = numpy.max(X)
+    nb_classes = numpy.max(X) + 1
 
-    sequence_input = keras.Input(shape=(input_length,), dtype='int32', name='char_input')
+    sequence_input = keras.Input(shape=(input_length,), dtype='bool', name='char_input')
 
     x_ohe = Lambda(K.one_hot,
                    arguments={'num_classes': nb_classes}, output_shape=(input_length,nb_classes))
 
+    # lib.get_conf('ngram_len')
     # Create output layer
     softmax_output_dim = len(y[0])
     output_layer = Dense(units=softmax_output_dim, activation='softmax')
