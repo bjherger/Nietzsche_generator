@@ -60,6 +60,7 @@ def rnn_embedding_model(X, y):
     # Embedding output dimensionality is determined by heuristic
     embedding_output_dim = int(min((embedding_input_dim + 1) / 2, 50))
 
+    # Use a smaller datatype, if possible. This explicit typing is necessary due to the OHE layer.
     if embedding_input_dim < 250:
         dtype = 'uint8'
     else:
@@ -79,7 +80,7 @@ def rnn_embedding_model(X, y):
 
     # Create model architecture
     x = embedding_layer(sequence_input)
-    x = LSTM(128)(x)
+    x = LSTM(128, dropout=.2, recurrent_dropout=.2)(x)
     x = output_layer(x)
 
     optimizer = RMSprop(lr=.001)
