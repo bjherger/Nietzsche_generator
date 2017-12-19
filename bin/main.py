@@ -5,20 +5,18 @@ coding=utf-8
 Code Template
 
 """
-import logging
-
 import io
+import logging
+import random
 
-import keras
-import numpy
-import pandas
 import sys
-from keras import Input, Model
-from keras.layers import Embedding, Flatten, Dense
+from keras import Sequential
+from keras.layers import LSTM, Dense, Activation
+from keras.optimizers import RMSprop
 from keras.utils import get_file
-from sklearn.decomposition import PCA
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder
+
+import numpy as np
 
 import lib
 import models
@@ -32,109 +30,108 @@ def main():
     """
     logging.basicConfig(level=logging.WARN)
 
-    chars = extract()
-    chars, encoded_chars, encoder, X = transform(chars)
-    chars, encoded_chars, encoder, ohe, char_model = model(chars, encoded_chars, encoder, X)
+    text = extract()
+    text, char_indices, indices_char, x, y = transform(text)
+    model(text, char_indices, indices_char, x, y)
 
-    load()
     pass
-
 
 def extract():
-    logging.info('Begin extract')
+    # TODO Extract
 
-    # Check if Niezsche is available. If not, download.
     path = get_file('nietzsche.txt', origin='https://s3.amazonaws.com/text-datasets/nietzsche.txt')
+    text = io.open(path, encoding='utf-8').read().lower()
 
-    # Pull text from file
-    chars = io.open(path, encoding='utf-8').read().lower()
-
-    # Convert to array of characters
-    chars = list(chars)
     if lib.get_conf('test_run'):
-        chars = chars[:5000]
+        text = text[:10000]
 
-    lib.archive_dataset_schemas('extract', locals(), globals())
-    logging.info('End extract')
-    return chars
+    return text
 
+def transform(text):
+    chars = sorted(list(set(text)))
+    print('total chars:', len(chars))
+    char_indices = dict((c, i) for i, c in enumerate(chars))
+    indices_char = dict((i, c) for i, c in enumerate(chars))
 
-def transform(chars):
-    logging.info('Begin transform')
+    # cut the text in semi-redundant sequences of maxlen characters
+    maxlen = 40
+    step = 3
+    sentences = []
+    next_chars = []
+    for i in range(0, len(text) - maxlen, step):
+        sentences.append(text[i: i + maxlen])
+        next_chars.append(text[i + maxlen])
+    print('nb sequences:', len(sentences))
 
-    # Filter characters
-    chars = map(lambda x: x.lower(), chars)
-    pre_filter_len = len(chars)
-    chars = filter(lambda x: x in lib.legal_characters(), chars)
-    post_filter_len = len(chars)
-    logging.info('Filtered with legal characters. Length before: {}. Length after: {}'.format(pre_filter_len,
-                                                                                              post_filter_len))
+    print('Vectorization...')
+    x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
+    y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
+    for i, sentence in enumerate(sentences):
+        for t, char in enumerate(sentence):
+            x[i, t, char_indices[char]] = 1
+        y[i, char_indices[next_chars[i]]] = 1
 
-    # Convert character ngrams into label representations
-    encoder = LabelEncoder()
-    encoded_chars = encoder.fit_transform(chars)
+    return text, char_indices, indices_char, x, y
 
-    # Create X, containing character ngrams
-    ngrams = lib.find_ngrams(encoded_chars, lib.get_conf('ngram_len'))
-    X = numpy.matrix(ngrams)
+def model(text, char_indices, indices_char, x, y):
+    maxlen = 40
+    chars = sorted(list(set(text)))
 
-    lib.archive_dataset_schemas('transform', locals(), globals())
+    # TODO Model
+    print('Build model...')
+    model = Sequential()
+    model.add(LSTM(128, input_shape=(maxlen, len(chars))))
+    model.add(Dense(len(chars)))
+    model.add(Activation('softmax'))
 
-    return chars, encoded_chars, encoder, X
+    optimizer = RMSprop(lr=0.01)
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
+    # train the model, output generated text after each iteration
+    for iteration in range(1, 60):
+        print()
+        print('-' * 50)
+        print('Iteration', iteration)
+        model.fit(x, y,
+                  batch_size=128,
+                  epochs=1)
 
+        start_index = random.randint(0, len(text) - maxlen - 1)
 
-def model(chars, encoded_chars, encoder, X):
-    logging.info('Begin model')
+        for diversity in [0.2, 0.5, 1.0, 1.2]:
+            print()
+            print('----- diversity:', diversity)
 
+            generated = ''
+            sentence = text[start_index: start_index + maxlen]
+            generated += sentence
+            print('----- Generating with seed: "' + sentence + '"')
+            sys.stdout.write(generated)
 
+            for i in range(400):
+                x_pred = np.zeros((1, maxlen, len(chars)))
+                for t, char in enumerate(sentence):
+                    x_pred[0, t, char_indices[char]] = 1.
 
-    # Create y, containing next character after window
-    ohe = OneHotEncoder(sparse=False)
-    y_intermediate = map(lambda x: [x], encoded_chars[lib.get_conf('ngram_len') - 1:])
-    y = ohe.fit_transform(y_intermediate)
+                preds = model.predict(x_pred, verbose=0)[0]
+                next_index = sample(preds, diversity)
+                next_char = indices_char[next_index]
 
-    logging.info('Created X with shape {}, and y with shape: {}'.format(X.shape, y.shape))
+                generated += next_char
+                sentence = sentence[1:] + next_char
 
-    # Create embedding
-    embedding_input_dim = len(encoder.classes_)
-    embedding_output_dim = min((embedding_input_dim + 1)/2, 50)
+                sys.stdout.write(next_char)
+                sys.stdout.flush()
+            print()
 
-    # char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
-    # char_model = models.rnn_embedding_model(embedding_input_dim, embedding_output_dim, X, y)
-    char_model = models.rnn_model(embedding_input_dim, embedding_output_dim, X, y)
-    test_snippets = [
-        'SUPPOSING that Truth is a woman--what then? Is there not ground for suspecting that all philosophers, '
-        'in so far as they have been dogmati',
-        'Good in Itself. But now when it has been surmounted, when Europe, rid of this nightmare',
-        'perhaps, that our new language sounds most strangely. The question is, how far an opinion is life-']
-
-    # Train model
-    for epoch_index in range(0,60,1):
-        print('Epoch: {}'.format(epoch_index))
-        char_model.fit(X, y, batch_size=8192, validation_split=.2, epochs=1, verbose=0)
-
-        for snippet in test_snippets:
-            print("'", snippet, lib.finish_sentence(encoder, ohe, char_model, snippet), "'")
-
-    lib.archive_dataset_schemas('model', locals(), globals())
-    logging.info('End model')
-    return chars, encoded_chars, encoder, ohe, char_model
-
-
-def load():
-    logging.info('Begin load')
-
-    # TODO Serialize encoder
-
-    # TODO Serialize model
-
-
-
-    lib.archive_dataset_schemas('load', locals(), globals())
-    logging.info('End load')
-    pass
-
+def sample(preds, temperature=1.0):
+    # helper function to sample an index from a probability array
+    preds = np.asarray(preds).astype('float64')
+    preds = np.log(preds) / temperature
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    probas = np.random.multinomial(1, preds, 1)
+    return np.argmax(probas)
 
 # Main section
 if __name__ == '__main__':
