@@ -121,11 +121,6 @@ def model(text, char_indices, indices_char, x, y):
                 generated += next_char
                 sentence = sentence[1:] + next_char
 
-                if next_char_index == 3:
-                    print 'transform '
-                    print x_pred.tolist()
-                    print preds.tolist()
-                    print next_index, next_char
             print 'Seed: {}, diversity: {}'.format(text[start_index: start_index + lib.get_conf('ngram_len')], diversity)
             print generated
 
