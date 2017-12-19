@@ -10,11 +10,15 @@ import logging
 import random
 
 import sys
+
+import numpy
+import tensorflow
 from keras import Sequential
 from keras.layers import LSTM, Dense, Activation
 from keras.optimizers import RMSprop
 from keras.utils import get_file
 from sklearn.preprocessing import OneHotEncoder
+from keras import backend as K
 
 import numpy as np
 
@@ -69,25 +73,21 @@ def transform(text, false_y=False):
         sentences.append(text[observation_index: observation_index + lib.get_conf('ngram_len')])
         next_chars.append(text[observation_index + lib.get_conf('ngram_len')])
 
-    x = np.zeros((len(sentences), lib.get_conf('ngram_len'), len(chars)), dtype=bool)
+    x = np.zeros((len(sentences), lib.get_conf('ngram_len')), dtype=numpy.uint16)
 
     y = np.zeros((len(sentences), len(chars)), dtype=bool)
 
     for observation_index, sentence in enumerate(sentences):
         for t, char in enumerate(sentence):
-            x[observation_index, t, char_indices[char]] = 1
+            x[observation_index, t] = char_indices[char]
         y[observation_index, char_indices[next_chars[observation_index]]] = 1
+
 
     return text, char_indices, indices_char, x, y
 
 def model(text, char_indices, indices_char, x, y):
 
-    chars = sorted(list(set(lib.legal_characters())))
-
-    model = Sequential()
-    model.add(LSTM(128, input_shape=(lib.get_conf('ngram_len'), len(chars))))
-    model.add(Dense(len(chars)))
-    model.add(Activation('softmax'))
+    model = models.ff_model(x, y)
 
     optimizer = RMSprop(lr=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
