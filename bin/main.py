@@ -105,7 +105,8 @@ def model(chars, encoded_chars, encoder, X):
     embedding_input_dim = len(encoder.classes_)
     embedding_output_dim = min((embedding_input_dim + 1)/2, 50)
 
-    char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
+    # char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
+    char_model = models.rnn_model(embedding_input_dim, embedding_output_dim, X, y)
 
     # Train model
     char_model.fit(X, y, batch_size=2048, validation_split=.2, epochs=3)
