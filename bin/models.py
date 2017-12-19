@@ -79,7 +79,7 @@ def rnn_model(X, y):
 
     nb_classes = numpy.max(X) + 1
 
-    sequence_input = keras.Input(shape=(input_length,), dtype='bool', name='char_input')
+    sequence_input = keras.Input(shape=(input_length,), dtype='int32', name='char_input')
 
     x_ohe = Lambda(K.one_hot,
                    arguments={'num_classes': nb_classes}, output_shape=(input_length,nb_classes))
