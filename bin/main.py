@@ -30,13 +30,13 @@ def main():
     :return: None
     :rtype: None
     """
-    logging.basicConfig(level=logging.WARN)
+    logging.basicConfig(level=logging.DEBUG)
 
     chars = extract()
     chars, encoded_chars, encoder, X = transform(chars)
     chars, encoded_chars, encoder, ohe, char_model = model(chars, encoded_chars, encoder, X)
 
-    test_snippets = ['the ex', 'helpf', 'eak pl', 'ow: on', 'nvestig']
+    test_snippets = ['SUPPOSING that Truth is a woman--what then? Is there not ground for suspecting that all philosophers, in so far as they have been dogmati']
 
     for snippet in test_snippets:
         print "'", snippet, lib.finish_sentence(encoder, ohe, char_model, snippet), "'"
@@ -56,6 +56,8 @@ def extract():
 
     # Convert to array of characters
     chars = list(chars)
+    if lib.get_conf('test_run'):
+        chars = chars[:5000]
 
     lib.archive_dataset_schemas('extract', locals(), globals())
     logging.info('End extract')
@@ -64,10 +66,11 @@ def extract():
 
 def transform(chars):
     logging.info('Begin transform')
+
     # Filter characters
     chars = map(lambda x: x.lower(), chars)
     pre_filter_len = len(chars)
-    filter(lambda x: x in lib.legal_characters(), chars)
+    chars = filter(lambda x: x in lib.legal_characters(), chars)
     post_filter_len = len(chars)
     logging.info('Filtered with legal characters. Length before: {}. Length after: {}'.format(pre_filter_len,
                                                                                               post_filter_len))
@@ -100,9 +103,10 @@ def model(chars, encoded_chars, encoder, X):
 
     # Create embedding
     embedding_input_dim = len(encoder.classes_)
-    embedding_output_dim = min((embedding_input_dim +  1)/2, 50)
+    embedding_output_dim = min((embedding_input_dim + 1)/2, 50)
 
-    char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
+    # char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
+    char_model = models.rnn_model(embedding_input_dim, embedding_output_dim, X, y)
 
     # Train model
     char_model.fit(X, y, batch_size=2048, validation_split=.2, epochs=3)
