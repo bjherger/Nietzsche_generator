@@ -147,9 +147,10 @@ def model_predict(encoder, ohe, model, text):
 
     chars, encoded_chars, new_encoder, X = main.transform(chars)
 
-    pred = model.predict(X)
-
-    pred_char_index = numpy.argmax(pred[-1])
+    pred = model.predict(X)[-1]
+    scaled_pred = pred / float(sum(pred))
+    pred_char_index = numpy.argmax(numpy.random.multinomial(1, scaled_pred, 1)[0])
+    print(numpy.argmax(pred), pred_char_index, pred[numpy.argmax(pred)], pred[pred_char_index])
     pred_char = encoder.inverse_transform(pred_char_index)
 
     return pred_char
@@ -158,7 +159,7 @@ def finish_sentence(encoder, ohe, model, text, num_chars=100):
     result_string = text
 
     while len(result_string) < len(text) + num_chars:
-        pred_char = model_predict(encoder, ohe, model, text)
+        pred_char = model_predict(encoder, ohe, model, result_string)
         result_string += pred_char
 
     result_string=result_string[len(text):]

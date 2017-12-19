@@ -1,6 +1,9 @@
 import keras
-from keras import Model
-from keras.layers import Dense, Flatten, Embedding
+from keras import Model, Sequential
+from keras.layers import Dense, Flatten, Embedding, LSTM, Activation
+from keras.optimizers import RMSprop
+
+import lib
 
 
 def ff_model(embedding_input_dim, embedding_output_dim, X, y):
@@ -33,3 +36,16 @@ def ff_model(embedding_input_dim, embedding_output_dim, X, y):
     char_model.compile(optimizer='Adam', loss='categorical_crossentropy')
 
     return char_model
+
+
+def rnn_model(embedding_input_dim, embedding_output_dim, X, y):
+    maxlen = lib.get_conf('ngram_len')
+
+    rnn_model = Sequential()
+    rnn_model.add(LSTM(128, input_shape=(maxlen, embedding_input_dim)))
+    rnn_model.add(Dense(embedding_input_dim))
+    rnn_model.add(Activation('softmax'))
+
+    optimizer = RMSprop(lr=0.01)
+    rnn_model.compile(loss='categorical_crossentropy', optimizer=optimizer)
+    return rnn_model
