@@ -108,7 +108,7 @@ def model(chars, encoded_chars, encoder, X):
     char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
 
     # Train model
-    char_model.fit(X, y, batch_size=2048, validation_split=.2, epochs=30)
+    char_model.fit(X, y, batch_size=2048, validation_split=.2, epochs=3)
 
     lib.archive_dataset_schemas('model', locals(), globals())
     logging.info('End model')

@@ -151,7 +151,7 @@ def model_predict(encoder, ohe, model, text):
     pred = model.predict(X)[-1]
 
     # Scale y hat so that it is in [0,1)
-    scaled_pred = pred / float(sum(pred))
+    scaled_pred = pred / (float(sum(pred)) * (1 + 1e-5))
     logging.debug('Sum of pred: {}'.format(float(sum(pred))))
 
     # Pick the most likely character by index
