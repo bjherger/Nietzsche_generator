@@ -9,11 +9,17 @@ from tensorflow import one_hot
 import lib
 
 
-def ff_model(embedding_input_dim, embedding_output_dim, X, y):
+def ff_model(X, y):
     if len(X.shape) >= 2:
         embedding_input_length = int(X.shape[1])
     else:
         embedding_input_length = 1
+
+    # Embedding input dimensionality is the same as the number of classes in the input data set
+    embedding_input_dim = int(numpy.max(X)) + 1
+
+    # Embedding output dimensionality is determined by heuristic
+    embedding_output_dim = int(min((embedding_input_dim + 1) / 2, 50))
 
     sequence_input = keras.Input(shape=(embedding_input_length,), dtype='int32', name='char_input')
 
@@ -54,7 +60,12 @@ def rnn_embedding_model(X, y):
     # Embedding output dimensionality is determined by heuristic
     embedding_output_dim = int(min((embedding_input_dim + 1) / 2, 50))
 
-    sequence_input = keras.Input(shape=(embedding_input_length,), dtype='int32', name='char_input')
+    if embedding_input_dim < 250:
+        dtype = 'uint8'
+    else:
+        dtype = 'int32'
+
+    sequence_input = keras.Input(shape=(embedding_input_length,), dtype=dtype, name='char_input')
 
     embedding_layer = Embedding(input_dim=embedding_input_dim,
                                 output_dim=embedding_output_dim,
@@ -86,7 +97,12 @@ def rnn_model(X, y):
 
     nb_classes = numpy.max(X) + 1
 
-    sequence_input = keras.Input(shape=(input_length,), dtype='int32', name='char_input')
+    if nb_classes < 250:
+        dtype = 'uint8'
+    else:
+        dtype = 'int32'
+
+    sequence_input = keras.Input(shape=(input_length,), dtype=dtype, name='char_input')
 
     x_ohe = Lambda(K.one_hot,
                    arguments={'num_classes': nb_classes}, output_shape=(input_length,nb_classes))
