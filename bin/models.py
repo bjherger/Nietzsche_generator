@@ -30,9 +30,9 @@ def ff_model(embedding_input_dim, embedding_output_dim, X, y):
     # Create model architecture
     embedded_sequences = embedding_layer(sequence_input)
     x = Flatten()(embedded_sequences)
-    x = Dense(128, activation='linear')(x)
-    x = Dense(256, activation='relu')(x)
-    x = Dense(128, activation='linear')(x)
+    x = Dense(32, activation='linear')(x)
+    x = Dense(64, activation='relu')(x)
+    x = Dense(32, activation='linear')(x)
     x = output_layer(x)
 
     char_model = Model(sequence_input, x)
@@ -41,11 +41,18 @@ def ff_model(embedding_input_dim, embedding_output_dim, X, y):
     return char_model
 
 
-def rnn_embedding_model(embedding_input_dim, embedding_output_dim, X, y):
+def rnn_embedding_model(X, y):
+
     if len(X.shape) >= 2:
         embedding_input_length = int(X.shape[1])
     else:
         embedding_input_length = 1
+
+    # Embedding input dimensionality is the same as the number of classes in the input data set
+    embedding_input_dim = int(numpy.max(X)) + 1
+
+    # Embedding output dimensionality is determined by heuristic
+    embedding_output_dim = int(min((embedding_input_dim + 1) / 2, 50))
 
     sequence_input = keras.Input(shape=(embedding_input_length,), dtype='int32', name='char_input')
 

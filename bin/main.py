@@ -87,7 +87,7 @@ def transform(text, false_y=False):
 
 def model(text, char_indices, indices_char, x, y):
 
-    model = models.rnn_model(x, y)
+    model = models.rnn_embedding_model(x, y)
 
     optimizer = RMSprop(lr=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
