@@ -96,7 +96,7 @@ def model(text, char_indices, indices_char, x, y):
     for iteration in range(1, 60):
         logging.info('Interation number: {}'.format(iteration))
         model.fit(x, y,
-                  batch_size=128,
+                  batch_size=4096,
                   epochs=1)
 
         start_index = random.randint(0, len(text) - lib.get_conf('ngram_len') - 1)
