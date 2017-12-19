@@ -1,7 +1,10 @@
 import keras
+import numpy
 from keras import Model, Sequential
-from keras.layers import Dense, Flatten, Embedding, LSTM, Activation, Reshape
+from keras import backend as K
+from keras.layers import Dense, Flatten, Embedding, LSTM, Activation, Reshape, Lambda
 from keras.optimizers import RMSprop
+from tensorflow import one_hot
 
 import lib
 
@@ -38,7 +41,7 @@ def ff_model(embedding_input_dim, embedding_output_dim, X, y):
     return char_model
 
 
-def rnn_model(embedding_input_dim, embedding_output_dim, X, y):
+def rnn_embedding_model(embedding_input_dim, embedding_output_dim, X, y):
     if len(X.shape) >= 2:
         embedding_input_length = int(X.shape[1])
     else:
@@ -65,5 +68,35 @@ def rnn_model(embedding_input_dim, embedding_output_dim, X, y):
 
     char_model = Model(sequence_input, x)
     char_model.compile(optimizer='Adam', loss='categorical_crossentropy')
+
+    return char_model
+
+def rnn_model(embedding_input_dim, embedding_output_dim, X, y):
+    if len(X.shape) >= 2:
+        input_length = int(X.shape[1])
+    else:
+        input_length = 1
+
+    nb_classes = numpy.max(X)
+
+    sequence_input = keras.Input(shape=(input_length,), dtype='int32', name='char_input')
+
+    x_ohe = Lambda(K.one_hot,
+                   arguments={'num_classes': nb_classes}, output_shape=(input_length,nb_classes))
+
+    # Create output layer
+    softmax_output_dim = len(y[0])
+    output_layer = Dense(units=softmax_output_dim, activation='softmax')
+
+    # Create model architecture
+    x = x_ohe(sequence_input)
+    # x = Flatten()(x)
+    # x = Reshape()(x)
+    x = LSTM(128)(x)
+    x = output_layer(x)
+
+    optimizer = RMSprop(lr=.01)
+    char_model = Model(sequence_input, x)
+    char_model.compile(optimizer=optimizer, loss='categorical_crossentropy')
 
     return char_model

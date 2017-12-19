@@ -101,8 +101,8 @@ def model(chars, encoded_chars, encoder, X):
     embedding_output_dim = min((embedding_input_dim + 1)/2, 50)
 
     # char_model = models.ff_model(embedding_input_dim, embedding_output_dim, X, y)
+    # char_model = models.rnn_embedding_model(embedding_input_dim, embedding_output_dim, X, y)
     char_model = models.rnn_model(embedding_input_dim, embedding_output_dim, X, y)
-
     test_snippets = [
         'SUPPOSING that Truth is a woman--what then? Is there not ground for suspecting that all philosophers, '
         'in so far as they have been dogmati',
