@@ -106,7 +106,7 @@ def model(text, char_indices, indices_char, x, y):
             generated = ''
             sentence = text[start_index: start_index + lib.get_conf('ngram_len')]
             generated += sentence
-            print('----- TRANSFORM Generating with seed: "' + sentence + '"')
+            print('----- Generating with seed: "' + sentence + '"')
             print(generated)
 
             # Generate 400 characters, using a rolling window
@@ -126,42 +126,8 @@ def model(text, char_indices, indices_char, x, y):
                     print x_pred.tolist()
                     print preds.tolist()
                     print next_index, next_char
-
+            print 'Seed: {}, diversity: {}'.format(text[start_index: start_index + lib.get_conf('ngram_len')], diversity)
             print generated
-            print sentence
-
-
-            print('----- ZEROS Generating with seed: "' + sentence + '"')
-            print(generated)
-            for diversity in [0.2, 0.5, 1.0, 1.2]:
-
-                generated = ''
-                sentence = text[start_index: start_index + lib.get_conf('ngram_len')]
-                generated += sentence
-
-                # Generate 400 characters, using a rolling window
-                for next_char_index in range(400):
-                    x_pred = np.zeros((1, lib.get_conf('ngram_len'), len(chars)), dtype=bool)
-                    for t, char in enumerate(sentence):
-                        x_pred[0, t, char_indices[char]] = 1.
-
-                    preds = model.predict(x_pred, verbose=0)[-1]
-
-                    next_index = sample(preds, diversity)
-                    next_char = indices_char[next_index]
-
-                    generated += next_char
-                    sentence = sentence[1:] + next_char
-                    if next_char_index == 3:
-                        print 'zeros'
-                        print x_pred.tolist()
-                        print preds.tolist()
-                        print next_index, next_char
-
-                print generated
-                print sentence
-
-            print()
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
