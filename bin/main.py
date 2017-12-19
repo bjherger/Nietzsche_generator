@@ -48,9 +48,11 @@ def extract():
     return text
 
 
-def transform(text):
+def transform(text, false_y=False):
     # TODO Should use universal character set, for inference time
     chars = sorted(list(set(lib.legal_characters())))
+    if false_y:
+        text +=' '
 
     text = map(lambda x: x.lower(), text)
     text = filter(lambda x: x in lib.legal_characters(), text)
@@ -67,8 +69,10 @@ def transform(text):
         sentences.append(text[observation_index: observation_index + lib.get_conf('ngram_len')])
         next_chars.append(text[observation_index + lib.get_conf('ngram_len')])
 
-    x = np.zeros((len(sentences), lib.get_conf('ngram_len'), len(chars)), dtype=np.bool)
-    y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
+    x = np.zeros((len(sentences), lib.get_conf('ngram_len'), len(chars)), dtype=bool)
+
+    y = np.zeros((len(sentences), len(chars)), dtype=bool)
+
     for observation_index, sentence in enumerate(sentences):
         for t, char in enumerate(sentence):
             x[observation_index, t, char_indices[char]] = 1
@@ -100,27 +104,63 @@ def model(text, char_indices, indices_char, x, y):
         for diversity in [0.2, 0.5, 1.0, 1.2]:
 
             generated = ''
-            sentence = text[start_index: start_index + lib.get_conf('ngram_len')+1]
+            sentence = text[start_index: start_index + lib.get_conf('ngram_len')]
             generated += sentence
-            print('----- Generating with seed: "' + sentence + '"')
-            sys.stdout.write(generated)
+            print('----- TRANSFORM Generating with seed: "' + sentence + '"')
+            print(generated)
 
-
+            # Generate 400 characters, using a rolling window
             for next_char_index in range(400):
-            #     x_pred = np.zeros((1, lib.get_conf('ngram_len'), len(chars)))
-            #     for t, char in enumerate(sentence):
-            #         x_pred[0, t, char_indices[char]] = 1.
-                text_text, text_char_indices, text_indices_char, x_pred, text_y = transform(sentence)
+                text_text, text_char_indices, text_indices_char, x_pred, text_y = transform(sentence, false_y=True)
 
-                preds = model.predict(x_pred, verbose=0)[0]
+                preds = model.predict(x_pred, verbose=0)[-1]
+
                 next_index = sample(preds, diversity)
                 next_char = indices_char[next_index]
 
                 generated += next_char
                 sentence = sentence[1:] + next_char
 
-                sys.stdout.write(next_char)
-                sys.stdout.flush()
+                if next_char_index == 3:
+                    print 'transform '
+                    print x_pred.tolist()
+                    print preds.tolist()
+                    print next_index, next_char
+
+            print generated
+            print sentence
+
+
+            print('----- ZEROS Generating with seed: "' + sentence + '"')
+            print(generated)
+            for diversity in [0.2, 0.5, 1.0, 1.2]:
+
+                generated = ''
+                sentence = text[start_index: start_index + lib.get_conf('ngram_len')]
+                generated += sentence
+
+                # Generate 400 characters, using a rolling window
+                for next_char_index in range(400):
+                    x_pred = np.zeros((1, lib.get_conf('ngram_len'), len(chars)), dtype=bool)
+                    for t, char in enumerate(sentence):
+                        x_pred[0, t, char_indices[char]] = 1.
+
+                    preds = model.predict(x_pred, verbose=0)[-1]
+
+                    next_index = sample(preds, diversity)
+                    next_char = indices_char[next_index]
+
+                    generated += next_char
+                    sentence = sentence[1:] + next_char
+                    if next_char_index == 3:
+                        print 'zeros'
+                        print x_pred.tolist()
+                        print preds.tolist()
+                        print next_index, next_char
+
+                print generated
+                print sentence
+
             print()
 
 def sample(preds, temperature=1.0):
