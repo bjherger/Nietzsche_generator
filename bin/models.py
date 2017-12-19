@@ -61,13 +61,12 @@ def rnn_embedding_model(embedding_input_dim, embedding_output_dim, X, y):
 
     # Create model architecture
     x = embedding_layer(sequence_input)
-    # x = Flatten()(x)
-    # x = Reshape()(x)
     x = LSTM(128)(x)
     x = output_layer(x)
 
+    optimizer = RMSprop(lr=.001)
     char_model = Model(sequence_input, x)
-    char_model.compile(optimizer='Adam', loss='categorical_crossentropy')
+    char_model.compile(optimizer=optimizer, loss='categorical_crossentropy')
 
     return char_model
 
@@ -90,8 +89,6 @@ def rnn_model(embedding_input_dim, embedding_output_dim, X, y):
 
     # Create model architecture
     x = x_ohe(sequence_input)
-    # x = Flatten()(x)
-    # x = Reshape()(x)
     x = LSTM(128)(x)
     x = output_layer(x)
 

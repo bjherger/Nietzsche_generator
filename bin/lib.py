@@ -136,10 +136,10 @@ def archive_dataset_schemas(step_name, local_dict, global_dict):
     agg_schema_df.to_csv(schema_output_path, index_label='variable')
 
 def legal_characters():
-    return set('1234567890,.abcdefghijklmnopqrstuvwxyz ;?!-')
+    return set("""1234567890,.abcdefghijklmnopqrstuvwxyz ;?!-""")
 
 def find_ngrams(input_list, n):
-  return zip(*[input_list[i:] for i in range(n)])
+    return zip(*[input_list[i:] for i in range(n)])
 
 def model_predict(encoder, ohe, model, text):
 
